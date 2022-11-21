@@ -6,6 +6,8 @@ firestore-data-loader is a utility to reduce requests to Firestore via batching 
 
 ```bash
 npm install
+npm install -g firebase-tools
+firebase login
 ```
 
 Set up your code editor to use the ESLint and Prettier on save.
@@ -15,6 +17,7 @@ Set up your code editor to use the ESLint and Prettier on save.
 Tests are run automatically on pre-commit via Husky. You can also run them manually with:
 
 ```bash
+firebase emulators:start --only firestore
 npm run test
 ```
 

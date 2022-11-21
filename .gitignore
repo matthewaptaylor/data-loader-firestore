@@ -1,3 +1,5 @@
 node_modules
 lib
 .husky/_
+firebase-debug.log
+firestore-debug.log
