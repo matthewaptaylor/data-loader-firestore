@@ -1,5 +1,5 @@
 {
-  "name": "firestore-dataloader",
+  "name": "firestore-data-loader",
   "version": "1.0.0",
   "description": "A utility to reduce requests to Firestore via batching and caching.",
   "main": "index.js",
@@ -9,6 +9,10 @@
   },
   "author": "Matthew Taylor",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/matthewaptaylor/firestore-data-loader.git"
+  },
   "devDependencies": {
     "@babel/core": "^7.20.2",
     "@babel/preset-env": "^7.20.2",
