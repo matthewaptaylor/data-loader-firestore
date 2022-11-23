@@ -10,7 +10,7 @@ export const checkValidDocumentSegments = (
 ): void => {
   if (docNames.length !== collectionNames.length) {
     const e = new Error(
-      `Because there are${collectionNames.length} collection names, there must be ${collectionNames.length} doc names.`
+      "The number of collection names must match the number of doc names."
     );
     e.name = "InvalidDocumentNamesError";
     throw e;
@@ -29,11 +29,7 @@ export const checkValidCollectionSegments = (
 ): void => {
   if (docNames.length !== collectionNames.length - 1) {
     const e = new Error(
-      `Because there are ${
-        collectionNames.length
-      } collection names, there must be ${
-        collectionNames.length - 1
-      } doc names.`
+      "The number of collection names must be one more than the number of document names."
     );
     e.name = "InvalidCollectionNamesError";
     throw e;

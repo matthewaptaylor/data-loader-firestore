@@ -150,6 +150,7 @@ describe("FirestoreCollectionLoader.getDoc", () => {
     expect(userPath).toEqual({
       firstName: "Jane",
       lastName: "Doe",
+      role: "student",
     });
   });
 
@@ -172,20 +173,96 @@ describe("FirestoreCollectionLoader.getDoc", () => {
   test("does not re-request document", async () => {
     await firestoreIsPopulated;
 
-    await firestore.collection("users").doc("changedjoe").set({
+    await firestore.collection("users").doc("changingjoe").set({
       firstName: "Same",
       lastName: "Joe",
     });
 
     const users = new FirestoreCollectionLoader(firestore, "users");
-    await users.getDoc("changedjoe");
+    await users.getDoc("changingjoe");
 
     await firestore.collection("users").doc("changingjoe").set({
       firstName: "Changed",
       lastName: "Joe",
     });
+    const user = await users.getDoc("changingjoe");
 
-    const userPath = await users.getDoc("changedjoe");
+    expect(user).toEqual({
+      firstName: "Same",
+      lastName: "Joe",
+    });
+  });
+});
+
+describe("FirestoreCollectionLoader.getQuery", () => {
+  test("rejects invalid doc names", () => {
+    const users = new FirestoreCollectionLoader(firestore, "users");
+
+    expect(
+      async () => await users.getQuery((c) => c, "jdoe/posts")
+    ).rejects.toThrow("Document names cannot contain slashes.");
+  });
+
+  test("gets document", async () => {
+    await firestoreIsPopulated;
+
+    const users = new FirestoreCollectionLoader(firestore, "users");
+    const userRes = await users.getQuery((c) =>
+      c.where("role", "==", "student")
+    );
+
+    expect(userRes).toEqual([
+      {
+        firstName: "Jane",
+        lastName: "Doe",
+        role: "student",
+      },
+      {
+        firstName: "John",
+        lastName: "Smith",
+        role: "student",
+      },
+    ]);
+  });
+
+  test("gets document two in", async () => {
+    await firestoreIsPopulated;
+
+    const userPosts = new FirestoreCollectionLoader(
+      firestore,
+      "users",
+      "posts"
+    );
+
+    const userRes = await userPosts.getQuery(
+      (c) => c.where("title", "==", "Post 1"),
+      "jdoe"
+    );
+
+    expect(userRes).toEqual([
+      {
+        title: "Post 1",
+        content: "This is post 1",
+      },
+    ]);
+  });
+
+  test("does not re-request document", async () => {
+    await firestoreIsPopulated;
+
+    await firestore.collection("users").doc("changingjoe").set({
+      firstName: "Same",
+      lastName: "Joe",
+    });
+
+    const users = new FirestoreCollectionLoader(firestore, "users");
+    await users.getQuery((c) => c.where("firstName", "==", "Same"));
+
+    await firestore.collection("users").doc("changingjoe").set({
+      firstName: "Changed",
+      lastName: "Joe",
+    });
+    const userPath = await users.getDoc("changingjoe");
 
     expect(userPath).toEqual({
       firstName: "Same",

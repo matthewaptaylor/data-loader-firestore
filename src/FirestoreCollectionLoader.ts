@@ -283,6 +283,8 @@ export default class FirestoreCollectionLoader<
   }
 
   /**
+   * Reads multiple documents from Firestore by query. The query is not saved,
+   * but the documents fetched are.
    *
    * @param {Function} queryFn A function that returns the query to be executed.
    *
@@ -297,9 +299,6 @@ export default class FirestoreCollectionLoader<
     ) => Query<DocumentModel>,
     ...docNames: string[]
   ): Promise<DocumentModel[]> {
-    if (docNames.length === 0)
-      throw new Error("Document names must be specified.");
-
     // Ensure that no doc names contain slashes
     if (docNames.some((docName) => docName.includes("/")))
       throw new Error("Document names cannot contain slashes.");
@@ -318,7 +317,6 @@ export default class FirestoreCollectionLoader<
       const data = doc.data();
 
       docs.push(data);
-
       this.dataLoader.prime(path, data);
     });
 
