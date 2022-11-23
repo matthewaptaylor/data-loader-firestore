@@ -1,9 +1,15 @@
-import type { QueryDocumentSnapshot } from "@google-cloud/firestore";
+import type {
+  QueryDocumentSnapshot,
+  FirestoreDataConverter,
+  DocumentData,
+} from "@google-cloud/firestore";
 
 /**
  * Converts a Firestore collection reference to a typed reference.
  */
-export default class GenericConverter<DocumentModel> {
+export default class GenericConverter<DocumentModel extends DocumentData>
+  implements FirestoreDataConverter<DocumentModel>
+{
   /**
    * Converts an object of type T to a Firestore doc.
    *

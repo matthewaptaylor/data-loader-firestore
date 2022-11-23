@@ -1,33 +1,41 @@
 /**
- * Ensures that the given list of collection and document names will exactly
- * match a Firestore document path.
- * @param {string[]} collectionPath The list of collection names.
- * @param {string[]} docPath The list of document names.
+ * Ensures that the given list of collection and document names will correctly
+ * match a Firestore document.
+ * @param {string[]} collectionNames The list of collection names.
+ * @param {string[]} docNames The list of document names.
  */
-export const checkValidDocumentPath = (
-  collectionPath: string[],
-  docPath: string[]
+export const checkValidDocumentNames = (
+  collectionNames: string[],
+  docNames: string[]
 ): void => {
-  if (docPath.length !== collectionPath.length)
-    throw new Error(
-      `The document and collection path must be of the same length.`
+  if (docNames.length !== collectionNames.length) {
+    const e = new Error(
+      `Because there are${collectionNames.length} collection names, there must be ${collectionNames.length} doc names.`
     );
+    e.name = "InvalidDocumentNamesError";
+    throw e;
+  }
 };
 
 /**
- * Ensures that the given list of collection and document names will exactly
- * match a Firestore collection path.
- * @param {string[]} collectionPath The list of collection names.
- * @param {string[]} docPath The list of document names.
+ * Ensures that the given list of collection and document names will correctly
+ * match a Firestore collection.
+ * @param {string[]} collectionNames The list of collection names.
+ * @param {string[]} docNames The list of document names.
  */
-export const checkValidCollectionPath = (
-  collectionPath: string[],
-  docPath: string[]
+export const checkValidCollectionNames = (
+  collectionNames: string[],
+  docNames: string[]
 ): void => {
-  if (docPath.length !== collectionPath.length - 1)
-    throw new Error(
-      `For a collection path of length ${
-        collectionPath.length
-      }, the document path must be of length ${collectionPath.length - 1}.`
+  if (docNames.length !== collectionNames.length - 1) {
+    const e = new Error(
+      `Because there are ${
+        collectionNames.length
+      } collection names, there must be ${
+        collectionNames.length - 1
+      } doc names.`
     );
+    e.name = "InvalidCollectionNamesError";
+    throw e;
+  }
 };
