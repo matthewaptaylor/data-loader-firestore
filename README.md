@@ -1,14 +1,20 @@
-# firestore-data-loader
+# data-loader-firestore
 
-firestore-data-loader is a utility to reduce requests to Firestore via memoisation.
+data-loader-firestore is a utility to reduce requests to Firestore via memoisation.
 
 ## Usage
+
+To add data-loaer-firestore to your project:
+
+```bash
+npm install --save data-loader-firestore
+```
 
 Get the document 'userId' from the users collection:
 
 ```ts
 import { getFirestore } from "firebase-admin/firestore";
-import { FirestoreDataLoader } from "firestore-data-loader";
+import { FirestoreDataLoader } from "data-loader-firestore";
 
 const firestore = getFirestore();
 
@@ -44,6 +50,8 @@ const students = await users.getQuery((usersCollection) =>
 - [ ] Caching support
 
 ## Installation
+
+If you'd like to contribute to this project, you can install the dependencies with:
 
 ```bash
 npm install
