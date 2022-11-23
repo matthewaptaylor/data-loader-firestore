@@ -3,10 +3,14 @@ import type {
   DocumentData,
   DocumentReference,
   Firestore,
+  Query,
 } from "@google-cloud/firestore";
 import DataLoader from "dataloader";
 import GenericConverter from "./GenericConverter";
-import { checkValidDocumentNames } from "./utils";
+import {
+  checkValidCollectionSegments,
+  checkValidDocumentSegments,
+} from "./utils";
 
 /**
  * Provides memoisation for Firestore queries.
@@ -102,13 +106,13 @@ export default class FirestoreCollectionLoader<
    * @example
    * // If this.collectionNames === ['users'], this returns a reference to the
    * // users collection
-   * #getCollectionRef();
+   * getCollectionRef();
    *
    * @example
    * // If this.collectionNames === ['users', 'posts'], this returns a reference
    * // to the posts subcollection of the document with id 'jsmith' in the users
    * // collection
-   * #getCollectionRef('jsmith');
+   * getCollectionRef('jsmith');
    *
    * @param {string[]} docNames The names of the Firestore documents. Assumes
    * this is the same length as this.collectionNames.
@@ -134,12 +138,12 @@ export default class FirestoreCollectionLoader<
    *
    * @example
    * // If this.collectionNames === ['users'], this returns ['users', 'jsmith']
-   * #getDocRef('jsmith');
+   * getDocRef('jsmith');
    *
    * @example
    * // If this.collectionNames === ['users', 'posts'], this returns
    * // ['users', 'jsmith', 'posts', 'post1']
-   * #getDocRef('jsmith', 'post1');
+   * getDocRef('jsmith', 'post1');
    *
    * @param {string[]} docNames The names of the Firestore documents. Assumes
    * this is one less than the length of this.collectionNames.
@@ -191,12 +195,12 @@ export default class FirestoreCollectionLoader<
    *
    * @example
    * // If this.collectionNames === ['users'], this returns ['users', 'jsmith']
-   * #getDocSegments('jsmith');
+   * getDocSegments('jsmith');
    *
    * @example
    * // If this.collectionNames === ['users', 'posts'], this returns
    * // ['users', 'jsmith', 'posts', 'post1']
-   * #getDocSegments('jsmith', 'post1');
+   * getDocSegments('jsmith', 'post1');
    *
    * @param {string[]} docNames The names of the Firestore documents. Assumes
    * this is one less than the length of this.collectionNames.
@@ -218,11 +222,11 @@ export default class FirestoreCollectionLoader<
    *
    * @example
    * // This returns ['jsmith']
-   * #getDocSegments('users', 'jsmith');
+   * getDocSegments('users', 'jsmith');
    *
    * @example
    * // This returns ['jsmith', 'post1']
-   * #getDocSegments('users', 'jsmith', 'posts', 'post1');
+   * getDocSegments('users', 'jsmith', 'posts', 'post1');
    *
    * @param {string[]} segments The segments of the Firestore document. Assumes
    * every odd segment (a collection name) is in this.collectionNames.
@@ -240,8 +244,26 @@ export default class FirestoreCollectionLoader<
 
   /**
    * Reads a single document from Firestore.
-   * @param {string[]} docNames The names of the Firestore documents.
-   * @return {Promise<DocumentModel>}
+   *
+   * @param {string[]} docNames The names of the Firestore documents that lead
+   * to the document to read. This must be one less than the length of
+   * this.collectionNames.
+   *
+   * @example
+   * // This returns the contents of the document 'users/jsmith'
+   * const firestore = getFirestore();
+   * const users =
+   *  new FirestoreDataLoader<UserDoc>(firestore, 'users');
+   * users.getDoc('jsmith');
+   *
+   * @example
+   * // This returns the contents of the document 'users/jsmith/posts/post1'
+   * const firestore = getFirestore();
+   * const userPosts =
+   *  new FirestoreDataLoader<UserDoc>(firestore, 'users', 'posts');
+   * userPosts.getDoc('jsmith', 'post1');
+   *
+   * @return {Promise<DocumentModel>} The document.
    */
   async getDoc(...docNames: string[]): Promise<DocumentModel> {
     if (docNames.length === 0)
@@ -251,12 +273,55 @@ export default class FirestoreCollectionLoader<
     if (docNames.some((docName) => docName.includes("/")))
       throw new Error("Document names cannot contain slashes.");
 
-    checkValidDocumentNames(this.collectionNames, docNames);
+    checkValidDocumentSegments(this.collectionNames, docNames);
 
     // Ensure that no document names contain slashes
     if (docNames.some((docName) => docName.includes("/")))
       throw new Error("Document names cannot contain slashes.");
 
     return this.dataLoader.load(this.getDocSegments(...docNames).join("/"));
+  }
+
+  /**
+   *
+   * @param {Function} queryFn A function that returns the query to be executed.
+   *
+   * @param {string[]} docNames The names of the Firestore documents that lead
+   * to the collection to query.
+   *
+   * @return {Promise<DocumentModel[]>} The documents in the collection.
+   */
+  async getQuery(
+    queryFn: (
+      collectionRef: CollectionReference<DocumentModel>
+    ) => Query<DocumentModel>,
+    ...docNames: string[]
+  ): Promise<DocumentModel[]> {
+    if (docNames.length === 0)
+      throw new Error("Document names must be specified.");
+
+    // Ensure that no doc names contain slashes
+    if (docNames.some((docName) => docName.includes("/")))
+      throw new Error("Document names cannot contain slashes.");
+
+    checkValidCollectionSegments(this.collectionNames, docNames);
+
+    // Get the query
+    const collectionRef = this.getCollectionRef(...docNames);
+    const snap = await queryFn(collectionRef).get();
+
+    const docs: DocumentModel[] = [];
+
+    // Add each document to the array
+    snap.forEach((doc) => {
+      const path = this.getDocSegments(...docNames, doc.id).join("/");
+      const data = doc.data();
+
+      docs.push(data);
+
+      this.dataLoader.prime(path, data);
+    });
+
+    return docs;
   }
 }

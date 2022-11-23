@@ -4,7 +4,7 @@
  * @param {string[]} collectionNames The list of collection names.
  * @param {string[]} docNames The list of document names.
  */
-export const checkValidDocumentNames = (
+export const checkValidDocumentSegments = (
   collectionNames: string[],
   docNames: string[]
 ): void => {
@@ -23,7 +23,7 @@ export const checkValidDocumentNames = (
  * @param {string[]} collectionNames The list of collection names.
  * @param {string[]} docNames The list of document names.
  */
-export const checkValidCollectionNames = (
+export const checkValidCollectionSegments = (
   collectionNames: string[],
   docNames: string[]
 ): void => {

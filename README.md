@@ -1,6 +1,10 @@
 # firestore-data-loader
 
-firestore-data-loader is a utility to reduce requests to Firestore via batching and caching.
+firestore-data-loader is a utility to reduce requests to Firestore via memoisation.
+
+## Usage
+
+Coming soon.
 
 ## Installation
 
@@ -20,10 +24,6 @@ Tests are run automatically on pre-commit via Husky. You can also run them manua
 firebase emulators:start --only firestore
 npm run test
 ```
-
-## Usage
-
-Coming soon.
 
 ## Contributing
 
