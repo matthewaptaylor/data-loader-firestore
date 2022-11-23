@@ -254,18 +254,18 @@ export default class FirestoreCollectionLoader<
    * const firestore = getFirestore();
    * const users =
    *  new FirestoreDataLoader<UserDoc>(firestore, 'users');
-   * users.getDoc('jsmith');
+   * users.fetchDocById('jsmith');
    *
    * @example
    * // This returns the contents of the document 'users/jsmith/posts/post1'
    * const firestore = getFirestore();
    * const userPosts =
    *  new FirestoreDataLoader<UserDoc>(firestore, 'users', 'posts');
-   * userPosts.getDoc('jsmith', 'post1');
+   * userPosts.fetchDocById('jsmith', 'post1');
    *
    * @return {Promise<DocumentModel>} The document.
    */
-  async getDoc(...docNames: string[]): Promise<DocumentModel> {
+  async fetchDocById(...docNames: string[]): Promise<DocumentModel> {
     if (docNames.length === 0)
       throw new Error("Document names must be specified.");
 
@@ -291,9 +291,23 @@ export default class FirestoreCollectionLoader<
    * @param {string[]} docNames The names of the Firestore documents that lead
    * to the collection to query.
    *
+   * @example
+   * // This returns the contents of the document 'users/jsmith'
+   * const firestore = getFirestore();
+   * const users =
+   *  new FirestoreDataLoader<UserDoc>(firestore, 'users');
+   * users.fetchDocById('jsmith');
+   *
+   * @example
+   * // This returns the contents of the document 'users/jsmith/posts/post1'
+   * const firestore = getFirestore();
+   * const userPosts =
+   *  new FirestoreDataLoader<UserDoc>(firestore, 'users', 'posts');
+   * userPosts.fetchDocById('jsmith', 'post1');
+   *
    * @return {Promise<DocumentModel[]>} The documents in the collection.
    */
-  async getQuery(
+  async fetchDocsByQuery(
     queryFn: (
       collectionRef: CollectionReference<DocumentModel>
     ) => Query<DocumentModel>,

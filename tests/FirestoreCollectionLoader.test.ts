@@ -124,11 +124,11 @@ describe("FirestoreCollectionLoader.getDocNamesFromSegments", () => {
   });
 });
 
-describe("FirestoreCollectionLoader.getDoc", () => {
+describe("FirestoreCollectionLoader.fetchDocById", () => {
   test("rejects nonexistent doc names", () => {
     const users = new FirestoreCollectionLoader(firestore, "users");
 
-    expect(async () => await users.getDoc()).rejects.toThrow(
+    expect(async () => await users.fetchDocById()).rejects.toThrow(
       "Document names must be specified."
     );
   });
@@ -136,7 +136,7 @@ describe("FirestoreCollectionLoader.getDoc", () => {
   test("rejects invalid doc names", () => {
     const users = new FirestoreCollectionLoader(firestore, "users");
 
-    expect(async () => await users.getDoc("jdoe/posts")).rejects.toThrow(
+    expect(async () => await users.fetchDocById("jdoe/posts")).rejects.toThrow(
       "Document names cannot contain slashes."
     );
   });
@@ -145,7 +145,7 @@ describe("FirestoreCollectionLoader.getDoc", () => {
     await firestoreIsPopulated;
 
     const users = new FirestoreCollectionLoader(firestore, "users");
-    const userPath = await users.getDoc("jdoe");
+    const userPath = await users.fetchDocById("jdoe");
 
     expect(userPath).toEqual({
       firstName: "Jane",
@@ -162,7 +162,7 @@ describe("FirestoreCollectionLoader.getDoc", () => {
       "users",
       "posts"
     );
-    const post = await userPosts.getDoc("jdoe", "post1");
+    const post = await userPosts.fetchDocById("jdoe", "post1");
 
     expect(post).toEqual({
       title: "Post 1",
@@ -179,13 +179,13 @@ describe("FirestoreCollectionLoader.getDoc", () => {
     });
 
     const users = new FirestoreCollectionLoader(firestore, "users");
-    await users.getDoc("changingjoe");
+    await users.fetchDocById("changingjoe");
 
     await firestore.collection("users").doc("changingjoe").set({
       firstName: "Changed",
       lastName: "Joe",
     });
-    const user = await users.getDoc("changingjoe");
+    const user = await users.fetchDocById("changingjoe");
 
     expect(user).toEqual({
       firstName: "Same",
@@ -194,12 +194,12 @@ describe("FirestoreCollectionLoader.getDoc", () => {
   });
 });
 
-describe("FirestoreCollectionLoader.getQuery", () => {
+describe("FirestoreCollectionLoader.fetchDocsByQuery", () => {
   test("rejects invalid doc names", () => {
     const users = new FirestoreCollectionLoader(firestore, "users");
 
     expect(
-      async () => await users.getQuery((c) => c, "jdoe/posts")
+      async () => await users.fetchDocsByQuery((c) => c, "jdoe/posts")
     ).rejects.toThrow("Document names cannot contain slashes.");
   });
 
@@ -207,7 +207,7 @@ describe("FirestoreCollectionLoader.getQuery", () => {
     await firestoreIsPopulated;
 
     const users = new FirestoreCollectionLoader(firestore, "users");
-    const userRes = await users.getQuery((c) =>
+    const userRes = await users.fetchDocsByQuery((c) =>
       c.where("role", "==", "student")
     );
 
@@ -234,7 +234,7 @@ describe("FirestoreCollectionLoader.getQuery", () => {
       "posts"
     );
 
-    const userRes = await userPosts.getQuery(
+    const userRes = await userPosts.fetchDocsByQuery(
       (c) => c.where("title", "==", "Post 1"),
       "jdoe"
     );
@@ -256,13 +256,13 @@ describe("FirestoreCollectionLoader.getQuery", () => {
     });
 
     const users = new FirestoreCollectionLoader(firestore, "users");
-    await users.getQuery((c) => c.where("firstName", "==", "Same"));
+    await users.fetchDocsByQuery((c) => c.where("firstName", "==", "Same"));
 
     await firestore.collection("users").doc("changingjoe").set({
       firstName: "Changed",
       lastName: "Joe",
     });
-    const userPath = await users.getDoc("changingjoe");
+    const userPath = await users.fetchDocById("changingjoe");
 
     expect(userPath).toEqual({
       firstName: "Same",

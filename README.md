@@ -44,6 +44,7 @@ const students = await users.getQuery((usersCollection) =>
 - [x] Getting documents by ID
 - [x] Getting documents by query
 - [ ] Creating documents
+- [ ] Choice to disable memoisation for specific calls
 - [ ] User-defined dataloader support
 - [ ] Collection group support
 - [ ] Clearing a memoised document
