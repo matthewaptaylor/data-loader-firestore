@@ -16,7 +16,7 @@ import {
 /**
  * Provides memoisation for Firestore queries.
  */
-export default class FirestoreCollectionLoader<T extends DocumentData> {
+export class FirestoreCollectionLoader<T extends DocumentData> {
   protected dataLoader: DataLoader<string, OutputDocumentData<T>>;
   protected firestore: Firestore;
   protected collectionNames: string[];
@@ -266,7 +266,7 @@ export default class FirestoreCollectionLoader<T extends DocumentData> {
    *
    * @return {Promise<T>} The document.
    */
-  async fetchDocById(...docNames: string[]): Promise<T> {
+  async fetchDocById(...docNames: string[]): Promise<OutputDocumentData<T>> {
     if (docNames.length === 0)
       throw new Error("Document names must be specified.");
 

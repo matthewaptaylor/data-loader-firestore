@@ -8,7 +8,7 @@ import { OutputDocumentData } from "./types";
 /**
  * Converts a Firestore collection reference to a typed reference.
  */
-export default class GenericConverter<T>
+export default class GenericConverter<T extends DocumentData>
   implements FirestoreDataConverter<OutputDocumentData<T>>
 {
   /**

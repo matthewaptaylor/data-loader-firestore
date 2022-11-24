@@ -1,1 +1,2 @@
-export * from "./FirestoreCollectionLoader";
+export { FirestoreCollectionLoader } from "./FirestoreCollectionLoader";
+export * from "./types";

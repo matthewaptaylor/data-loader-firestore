@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import FirestoreCollectionLoader from "../src/FirestoreCollectionLoader";
+import { FirestoreCollectionLoader } from "../src";
 import firestore from "./firebase/makeDbConnection";
 import populateFirestore from "./firebase/populateFirestore";
 

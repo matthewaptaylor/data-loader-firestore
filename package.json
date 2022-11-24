@@ -1,8 +1,12 @@
 {
   "name": "data-loader-firestore",
-  "version": "v1.0.1",
+  "version": "v1.0.9",
   "description": "A utility to reduce requests to Firestore via batching and caching.",
-  "main": "src/index.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib/**/*"
+  ],
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
     "start": "nodemon",
@@ -10,7 +14,8 @@
     "format": "prettier --write .",
     "lint": "eslint  \"**/*.ts\"  --fix",
     "precommit": "prettier --check . && eslint \"**/*.ts\" --max-warnings=0 && jest --detectOpenHandles",
-    "prepare": "husky install"
+    "prepare": "husky install && npm run build",
+    "prepublishOnly": "npm run precommit"
   },
   "author": "Matthew Taylor",
   "license": "MIT",
