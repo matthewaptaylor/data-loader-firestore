@@ -13,29 +13,72 @@ npm install --save data-loader-firestore
 Get the document 'userId' from the users collection:
 
 ```ts
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, DocumentData } from "firebase-admin/firestore";
 import { FirestoreDataLoader } from "data-loader-firestore";
 
 const firestore = getFirestore();
 
-const users = new FirestoreDataLoader(firestore, "users");
-const user = await users.load("userId");
+interface User extends DocumentData {
+  name: string;
+  role: string;
+}
+
+const users = new FirestoreDataLoader<User>(firestore, "users");
+
+// Returns { _id: 'userId', _path: '/users/userId', name: "Jane", role: "student" }
+const user = await users.fetchDocById("userId");
 ```
 
 Get the document 'postId' from the posts collection of the user 'userId' in the users collection:
 
 ```ts
-const userPosts = new FirestoreDataLoader(firestore, "users", "posts");
-const post = await userPosts.load("userId", "postId");
+interface UserPost extends DocumentData {
+  title: string;
+}
+
+const userPosts = new FirestoreDataLoader<UserPost>(
+  firestore,
+  "users",
+  "posts"
+);
+
+// Returns { _id: 'postId', _path: '/users/userId/posts/postId', title: "My first post" }
+const post = await userPosts.fetchDocById("userId", "postId");
 ```
 
 Get all users with the role 'student':
 
 ```ts
-const users = new FirestoreDataLoader(firestore, "users");
-const students = await users.getQuery((usersCollection) =>
+// Returns [
+//  { _id: 'userId', _path: '/users/userId', name: "Jane", role: "student" },
+//  { _id: 'userId4', _path: '/users/userId2', name: "John", role: "student" }
+// ]
+const students = await users.fetchDocsByQuery((usersCollection) =>
   usersCollection.where("role", "==", "student")
 );
+```
+
+Create a user with the document ID 'msmith':
+
+```ts
+// Returns { _id: 'msmith', _path: '/users/msmith', name: "Mary Smith", role: "student" }
+const students = await users.createDoc(
+  {
+    name: "Mary Smith",
+    role: "teacher",
+  },
+  "msmith"
+);
+```
+
+Create a user with a generated document ID:
+
+```ts
+// Returns { _id: 'generatedId', _path: '/users/generatedId', name: "Mary Smith", role: "student" }
+const students = await users.createDoc({
+  name: "Mary Smith",
+  role: "teacher",
+});
 ```
 
 ## Planned features

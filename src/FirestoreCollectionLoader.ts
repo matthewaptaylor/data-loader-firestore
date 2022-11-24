@@ -1,12 +1,13 @@
 import type {
   CollectionReference,
-  DocumentData,
   DocumentReference,
   Firestore,
   Query,
+  DocumentData,
 } from "@google-cloud/firestore";
 import DataLoader from "dataloader";
 import GenericConverter from "./GenericConverter";
+import { OutputDocumentData } from "./types";
 import {
   checkValidCollectionSegments,
   checkValidDocumentSegments,
@@ -15,10 +16,8 @@ import {
 /**
  * Provides memoisation for Firestore queries.
  */
-export default class FirestoreCollectionLoader<
-  DocumentModel extends DocumentData
-> {
-  protected dataLoader: DataLoader<string, DocumentModel>;
+export default class FirestoreCollectionLoader<T extends DocumentData> {
+  protected dataLoader: DataLoader<string, OutputDocumentData<T>>;
   protected firestore: Firestore;
   protected collectionNames: string[];
 
@@ -51,7 +50,7 @@ export default class FirestoreCollectionLoader<
     this.collectionNames = collectionNames;
 
     // Initialise data loader to provide memoisation
-    this.dataLoader = new DataLoader<string, DocumentModel>(
+    this.dataLoader = new DataLoader<string, OutputDocumentData<T>>(
       this.batchLoad.bind(this)
     );
   }
@@ -62,12 +61,12 @@ export default class FirestoreCollectionLoader<
    * @param {ReadonlyArray<string>} docPaths Path (segments seperated by
    * slashes) of the documents to be added.
    *
-   * @return {Promise<ArrayLike<DocumentModel | Error>>}
+   * @return {Promise<ArrayLike<OutputDocumentData<T> | Error>>}
    */
   protected async batchLoad(
     docPaths: ReadonlyArray<string>
-  ): Promise<ArrayLike<DocumentModel | Error>> {
-    const docProms: Promise<DocumentModel | Error>[] = [];
+  ): Promise<ArrayLike<OutputDocumentData<T> | Error>> {
+    const docProms: Promise<OutputDocumentData<T> | Error>[] = [];
 
     // Get each document
     for (const docPath of docPaths) {
@@ -110,18 +109,18 @@ export default class FirestoreCollectionLoader<
    *
    * @example
    * // If this.collectionNames === ['users', 'posts'], this returns a reference
-   * // to the posts subcollection of the document with id 'jsmith' in the users
+   * // to the posts subcollection of the document with ID 'jsmith' in the users
    * // collection
    * getCollectionRef('jsmith');
    *
    * @param {string[]} docNames The names of the Firestore documents. Assumes
    * this is the same length as this.collectionNames.
    *
-   * @return {CollectionReference<DocumentModel>} A Firestore collection reference.
+   * @return {CollectionReference<T>} A Firestore collection reference.
    */
   protected getCollectionRef(
     ...docNames: string[]
-  ): CollectionReference<DocumentModel> {
+  ): CollectionReference<OutputDocumentData<T>> {
     let collection = this.firestore.collection(this.collectionNames[0]);
 
     // Add each following pair of doc and collection names as a subcollection
@@ -130,7 +129,7 @@ export default class FirestoreCollectionLoader<
         .doc(docNames[i])
         .collection(this.collectionNames[i + 1]);
 
-    return collection as CollectionReference<DocumentModel>;
+    return collection.withConverter(new GenericConverter<T>());
   }
 
   /**
@@ -148,18 +147,20 @@ export default class FirestoreCollectionLoader<
    * @param {string[]} docNames The names of the Firestore documents. Assumes
    * this is one less than the length of this.collectionNames.
    *
-   * @return {DocumentReference<DocumentModel>} The collection reference.
+   * @return {OutputDocumentData<T>} The collection reference.
    */
-  protected getDocRef(...docNames: string[]): DocumentReference<DocumentModel> {
+  protected getDocRef(
+    ...docNames: string[]
+  ): DocumentReference<OutputDocumentData<T>> {
     // Get the first doc reference
-    let docRef: DocumentReference<DocumentData> | Firestore = this.firestore;
+    let docRef: DocumentReference | Firestore = this.firestore;
 
     // Add each pair of collection and doc names
     for (let i = 0; i < docNames.length; i++)
       docRef = docRef.collection(this.collectionNames[i]).doc(docNames[i]);
 
-    return (docRef as DocumentReference<DocumentData>).withConverter(
-      new GenericConverter<DocumentModel>()
+    return (docRef as DocumentReference).withConverter(
+      new GenericConverter<T>()
     );
   }
 
@@ -245,10 +246,6 @@ export default class FirestoreCollectionLoader<
   /**
    * Reads a single document from Firestore.
    *
-   * @param {string[]} docNames The names of the Firestore documents that lead
-   * to the document to read. This must be one less than the length of
-   * this.collectionNames.
-   *
    * @example
    * // This returns the contents of the document 'users/jsmith'
    * const firestore = getFirestore();
@@ -263,9 +260,13 @@ export default class FirestoreCollectionLoader<
    *  new FirestoreDataLoader<UserDoc>(firestore, 'users', 'posts');
    * userPosts.fetchDocById('jsmith', 'post1');
    *
-   * @return {Promise<DocumentModel>} The document.
+   * @param {string[]} docNames The names of the Firestore documents that lead
+   * to the document to read. This must be one less than the length of
+   * this.collectionNames.
+   *
+   * @return {Promise<T>} The document.
    */
-  async fetchDocById(...docNames: string[]): Promise<DocumentModel> {
+  async fetchDocById(...docNames: string[]): Promise<T> {
     if (docNames.length === 0)
       throw new Error("Document names must be specified.");
 
@@ -286,33 +287,38 @@ export default class FirestoreCollectionLoader<
    * Reads multiple documents from Firestore by query. The query is not saved,
    * but the documents fetched are.
    *
+   * @see https://firebase.google.com/docs/firestore/query-data/queries
+   *
+   * @example
+   * // This returns an array of documents in the users collection where the
+   * // field 'role' equals 'student'
+   * const users = new FirestoreDataLoader(firestore, "users");
+   * const students = await users.fetchDocsByQuery((usersCollection) =>
+   *  usersCollection.where("role", "==", "student")
+   * );
+   *
+   * @example
+   * // This returns an array of documents in the users/jdoe/posts collection
+   * // where the field 'title' equals 'Post 1'
+   * const userPosts = new FirestoreDataLoader(firestore, "users", "posts");
+   * const students = await users.fetchDocsByQuery((usersCollection) =>
+   *  usersCollection.where("role", "==", "student"),
+   *  "jdoe"
+   * );
+   *
    * @param {Function} queryFn A function that returns the query to be executed.
    *
    * @param {string[]} docNames The names of the Firestore documents that lead
    * to the collection to query.
    *
-   * @example
-   * // This returns the contents of the document 'users/jsmith'
-   * const firestore = getFirestore();
-   * const users =
-   *  new FirestoreDataLoader<UserDoc>(firestore, 'users');
-   * users.fetchDocById('jsmith');
-   *
-   * @example
-   * // This returns the contents of the document 'users/jsmith/posts/post1'
-   * const firestore = getFirestore();
-   * const userPosts =
-   *  new FirestoreDataLoader<UserDoc>(firestore, 'users', 'posts');
-   * userPosts.fetchDocById('jsmith', 'post1');
-   *
-   * @return {Promise<DocumentModel[]>} The documents in the collection.
+   * @return {Promise<OutputDocumentData<T>[]>} The documents in the collection.
    */
   async fetchDocsByQuery(
     queryFn: (
-      collectionRef: CollectionReference<DocumentModel>
-    ) => Query<DocumentModel>,
+      collectionRef: CollectionReference<OutputDocumentData<T>>
+    ) => Query<OutputDocumentData<T>>,
     ...docNames: string[]
-  ): Promise<DocumentModel[]> {
+  ): Promise<OutputDocumentData<T>[]> {
     // Ensure that no doc names contain slashes
     if (docNames.some((docName) => docName.includes("/")))
       throw new Error("Document names cannot contain slashes.");
@@ -323,7 +329,7 @@ export default class FirestoreCollectionLoader<
     const collectionRef = this.getCollectionRef(...docNames);
     const snap = await queryFn(collectionRef).get();
 
-    const docs: DocumentModel[] = [];
+    const docs: OutputDocumentData<T>[] = [];
 
     // Add each document to the array
     snap.forEach((doc) => {
@@ -335,5 +341,74 @@ export default class FirestoreCollectionLoader<
     });
 
     return docs;
+  }
+
+  /**
+   * Creates a document in Firestore.
+   *
+   * @example
+   * // This creates a document in the users collection with the ID 'jsmith'
+   * const users = new FirestoreDataLoader(firestore, "users");
+   * await users.createDoc(
+   *  { firstName: "John", lastName: "Smith" },
+   *  "jsmith"
+   * );
+   *
+   * @example
+   * // This creates a document in the users/jsmith/posts collection with a
+   * generated ID
+   * const userPosts = new FirestoreDataLoader(firestore, "users", "posts");
+   * await userPosts.createDoc(
+   *  { firstName: "John", lastName: "Smith" },
+   *  "jsmith"
+   * );
+   *
+   * @param {T} data The data to write to the document.
+   *
+   * @param {string[]} docNames The names of the Firestore documents that lead to the
+   * document to create. If equal to the length of this.collectionNames, the
+   * document is created in the collection. If one less than the length of
+   * this.collectionNames, the document is created in the collection with a
+   * generated ID.
+   *
+   * @return {Promise<OutputDocumentData<T>>} The document written.
+   */
+  async createDoc(
+    data: T,
+    ...docNames: string[]
+  ): Promise<OutputDocumentData<T>> {
+    // Ensure that no doc names contain slashes
+    if (docNames.some((docName) => docName.includes("/")))
+      throw new Error("Document names cannot contain slashes.");
+
+    let docRef: DocumentReference<OutputDocumentData<T>> | undefined;
+
+    try {
+      // Try to create the document with a specified ID
+      checkValidDocumentSegments(this.collectionNames, docNames);
+      docRef = this.getDocRef(...docNames); // Get the document reference
+    } catch (err) {
+      if ((err as Error).name !== "InvalidDocumentNamesError") throw err;
+
+      // Try to create the document with a generated ID
+      checkValidCollectionSegments(this.collectionNames, docNames);
+      docRef = this.getCollectionRef(...docNames).doc(); // Get the collection reference
+    }
+
+    // Create the document
+    const dataToWrite: OutputDocumentData<T> = {
+      ...data,
+      _id: docRef.id,
+      _path: docRef.path,
+    };
+    await docRef.set(dataToWrite);
+
+    // Prime the cache
+    this.dataLoader.prime(
+      this.getDocSegments(...docNames).join("/"),
+      dataToWrite
+    );
+
+    return dataToWrite;
   }
 }

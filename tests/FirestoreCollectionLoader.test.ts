@@ -148,10 +148,38 @@ describe("FirestoreCollectionLoader.fetchDocById", () => {
     const userPath = await users.fetchDocById("jdoe");
 
     expect(userPath).toEqual({
+      _id: "jdoe",
+      _path: "users/jdoe",
       firstName: "Jane",
       lastName: "Doe",
       role: "student",
     });
+  });
+
+  test("rejects too few document names", () => {
+    const userPosts = new FirestoreCollectionLoader(
+      firestore,
+      "users",
+      "posts"
+    );
+
+    expect(async () => await userPosts.fetchDocById("jdoe")).rejects.toThrow(
+      "To select a document, the number of document names must match the number of collection names."
+    );
+  });
+
+  test("rejects too many document names", () => {
+    const userPosts = new FirestoreCollectionLoader(
+      firestore,
+      "users",
+      "posts"
+    );
+
+    expect(
+      async () => await userPosts.fetchDocById("jdoe", "post1", "likes")
+    ).rejects.toThrow(
+      "To select a document, the number of document names must match the number of collection names."
+    );
   });
 
   test("gets document two in", async () => {
@@ -165,6 +193,8 @@ describe("FirestoreCollectionLoader.fetchDocById", () => {
     const post = await userPosts.fetchDocById("jdoe", "post1");
 
     expect(post).toEqual({
+      _id: "post1",
+      _path: "users/jdoe/posts/post1",
       title: "Post 1",
       content: "This is post 1",
     });
@@ -188,6 +218,8 @@ describe("FirestoreCollectionLoader.fetchDocById", () => {
     const user = await users.fetchDocById("changingjoe");
 
     expect(user).toEqual({
+      _id: "changingjoe",
+      _path: "users/changingjoe",
       firstName: "Same",
       lastName: "Joe",
     });
@@ -213,16 +245,56 @@ describe("FirestoreCollectionLoader.fetchDocsByQuery", () => {
 
     expect(userRes).toEqual([
       {
+        _id: "jdoe",
+        _path: "users/jdoe",
         firstName: "Jane",
         lastName: "Doe",
         role: "student",
       },
       {
+        _id: "jsmith",
+        _path: "users/jsmith",
         firstName: "John",
         lastName: "Smith",
         role: "student",
       },
     ]);
+  });
+
+  test("rejects too few document names", () => {
+    const userPosts = new FirestoreCollectionLoader(
+      firestore,
+      "users",
+      "posts"
+    );
+
+    expect(
+      async () =>
+        await userPosts.fetchDocsByQuery((c) =>
+          c.where("title", "==", "Post 1")
+        )
+    ).rejects.toThrow(
+      "To select a collection, the number of document names must be one less than the number of collection names."
+    );
+  });
+
+  test("rejects too many document names", () => {
+    const userPosts = new FirestoreCollectionLoader(
+      firestore,
+      "users",
+      "posts"
+    );
+
+    expect(
+      async () =>
+        await userPosts.fetchDocsByQuery(
+          (c) => c.where("title", "==", "Post 1"),
+          "jdoe",
+          "post1"
+        )
+    ).rejects.toThrow(
+      "To select a collection, the number of document names must be one less than the number of collection names."
+    );
   });
 
   test("gets document two in", async () => {
@@ -241,6 +313,8 @@ describe("FirestoreCollectionLoader.fetchDocsByQuery", () => {
 
     expect(userRes).toEqual([
       {
+        _id: "post1",
+        _path: "users/jdoe/posts/post1",
         title: "Post 1",
         content: "This is post 1",
       },
@@ -265,8 +339,230 @@ describe("FirestoreCollectionLoader.fetchDocsByQuery", () => {
     const userPath = await users.fetchDocById("changingjoe");
 
     expect(userPath).toEqual({
+      _id: "changingjoe",
+      _path: "users/changingjoe",
       firstName: "Same",
       lastName: "Joe",
+    });
+  });
+});
+
+describe("FirestoreCollectionLoader.createDoc", () => {
+  test("rejects invalid doc names", () => {
+    const users = new FirestoreCollectionLoader(firestore, "users");
+
+    expect(
+      async () =>
+        await users.createDoc(
+          {
+            firstName: "Jane",
+            lastName: "Doe",
+          },
+          "j/johndoe"
+        )
+    ).rejects.toThrow("Document names cannot contain slashes.");
+  });
+
+  test("rejects too few document names", () => {
+    const userPosts = new FirestoreCollectionLoader(
+      firestore,
+      "users",
+      "posts"
+    );
+
+    expect(
+      async () =>
+        await userPosts.createDoc({
+          title: "Invalid Post",
+          content: "This is an invalid post",
+        })
+    ).rejects.toThrow(
+      "To select a collection, the number of document names must be one less than the number of collection names."
+    );
+  });
+
+  test("rejects too many document names", () => {
+    const userPosts = new FirestoreCollectionLoader(
+      firestore,
+      "users",
+      "posts"
+    );
+
+    expect(
+      async () =>
+        await userPosts.createDoc(
+          {
+            title: "Another Invalid Post",
+            content: "This is another invalid post",
+          },
+          "jdoe",
+          "post1",
+          "likes"
+        )
+    ).rejects.toThrow(
+      "To select a collection, the number of document names must be one less than the number of collection names."
+    );
+  });
+
+  test("creates document with id", async () => {
+    const userPosts = new FirestoreCollectionLoader(
+      firestore,
+      "users",
+      "posts"
+    );
+
+    await userPosts.createDoc(
+      {
+        _id: "post2",
+        _path: "users/jdoe/posts/post2",
+        title: "Second Post",
+        content: "This is a second post",
+      },
+      "jdoe",
+      "post2"
+    );
+
+    const userPost = (
+      await firestore
+        .collection("users")
+        .doc("jdoe")
+        .collection("posts")
+        .doc("post2")
+        .get()
+    ).data();
+
+    expect(userPost).toEqual({
+      title: "Second Post",
+      content: "This is a second post",
+    });
+  });
+
+  test("creates document with id", async () => {
+    const userPosts = new FirestoreCollectionLoader(
+      firestore,
+      "users",
+      "posts"
+    );
+
+    await userPosts.createDoc(
+      {
+        title: "Second Post",
+        content: "This is a second post",
+      },
+      "jdoe",
+      "post2"
+    );
+
+    const post2 = await firestore
+      .collection("users")
+      .doc("jdoe")
+      .collection("posts")
+      .doc("post2")
+      .get();
+
+    expect(post2.data()).toEqual({
+      title: "Second Post",
+      content: "This is a second post",
+    });
+  });
+
+  test("creates document with generated id", async () => {
+    const userPosts = new FirestoreCollectionLoader(
+      firestore,
+      "users",
+      "posts"
+    );
+
+    const userPost = await userPosts.createDoc(
+      {
+        title: "Random Post",
+        content: "This is a random post",
+      },
+      "jdoe"
+    );
+
+    const post2 = await firestore
+      .collection("users")
+      .doc("jdoe")
+      .collection("posts")
+      .doc(userPost._path?.split("/")[3] ?? "")
+      .get();
+
+    expect(post2.data()).toEqual({
+      title: "Random Post",
+      content: "This is a random post",
+    });
+  });
+
+  test("memoises document when created with id", async () => {
+    const userPosts = new FirestoreCollectionLoader(
+      firestore,
+      "users",
+      "posts"
+    );
+
+    await userPosts.createDoc(
+      {
+        title: "Memoed Post",
+        content: "This is a memoed post",
+      },
+      "jdoe",
+      "postMemo"
+    );
+
+    await firestore
+      .collection("users")
+      .doc("jdoe")
+      .collection("posts")
+      .doc("postMemo")
+      .set({
+        title: "Changed Post",
+        content: "This is a memoed post that's been changed",
+      });
+
+    const data = await userPosts.fetchDocById("jdoe", "postMemo");
+
+    expect(data).toEqual({
+      _id: "postMemo",
+      _path: "users/jdoe/posts/postMemo",
+      title: "Memoed Post",
+      content: "This is a memoed post",
+    });
+  });
+
+  test("memoises document when created with generated id", async () => {
+    const userPosts = new FirestoreCollectionLoader(
+      firestore,
+      "users",
+      "posts"
+    );
+
+    const createRes = await userPosts.createDoc(
+      {
+        title: "Memoed Post",
+        content: "This is a memoed post",
+      },
+      "jdoe",
+      "postMemo"
+    );
+
+    await firestore
+      .collection("users")
+      .doc("jdoe")
+      .collection("posts")
+      .doc(createRes._path?.split("/")[3] ?? "")
+      .set({
+        title: "Changed Post",
+        content: "This is a memoed post that's been changed",
+      });
+
+    const data = await userPosts.fetchDocById("jdoe", "postMemo");
+
+    expect(data).toEqual({
+      _id: "postMemo",
+      _path: createRes._path,
+      title: "Memoed Post",
+      content: "This is a memoed post",
     });
   });
 });

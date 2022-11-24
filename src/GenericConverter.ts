@@ -3,30 +3,42 @@ import type {
   FirestoreDataConverter,
   DocumentData,
 } from "@google-cloud/firestore";
+import { OutputDocumentData } from "./types";
 
 /**
  * Converts a Firestore collection reference to a typed reference.
  */
-export default class GenericConverter<DocumentModel extends DocumentData>
-  implements FirestoreDataConverter<DocumentModel>
+export default class GenericConverter<T>
+  implements FirestoreDataConverter<OutputDocumentData<T>>
 {
   /**
    * Converts an object of type T to a Firestore doc.
    *
-   * @param {DocumentModel} data An object representing the Forestore document's content.
-   * @return {DocumentModel}
+   * @param {OutputDocumentData<T>} data An object representing the Firestore
+   * document's content.
+   *
+   * @return {DocumentData}
    */
-  toFirestore(data: DocumentModel): DocumentModel {
-    return data;
+  toFirestore(data: OutputDocumentData<T>): DocumentData {
+    const firestoreData: DocumentData = { ...data };
+    delete firestoreData._id;
+    delete firestoreData._path;
+
+    return firestoreData;
   }
 
   /**
    * Converts a Firestore snapshot to an object of type T.
    *
    * @param {QueryDocumentSnapshot} snapshot The Firestore document snapshot.
-   * @return {DocumentModel}
+   *
+   * @return {OutputDocumentData<T>}
    */
-  fromFirestore(snapshot: QueryDocumentSnapshot): DocumentModel {
-    return snapshot.data() as DocumentModel;
+  fromFirestore(snapshot: QueryDocumentSnapshot): OutputDocumentData<T> {
+    return {
+      ...snapshot.data(),
+      _id: snapshot.id,
+      _path: snapshot.ref.path,
+    } as OutputDocumentData<T>;
   }
 }
