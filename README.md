@@ -46,12 +46,23 @@ const userPosts = new FirestoreDataLoader<UserPost>(
 const post = await userPosts.fetchDocById("userId", "postId");
 ```
 
+Get all users:
+
+```ts
+// Returns [
+//  { _id: 'userId', _path: '/users/userId', name: "Jane", role: "student" },
+//  { _id: 'userId1', _path: '/users/userId1', name: "Jack", role: "teacher" }
+//  { _id: 'userId2', _path: '/users/userId2', name: "John", role: "student" }
+// ]
+const students = await users.fetchDocs();
+```
+
 Get all users with the role 'student':
 
 ```ts
 // Returns [
 //  { _id: 'userId', _path: '/users/userId', name: "Jane", role: "student" },
-//  { _id: 'userId4', _path: '/users/userId2', name: "John", role: "student" }
+//  { _id: 'userId2', _path: '/users/userId2', name: "John", role: "student" }
 // ]
 const students = await users.fetchDocsByQuery((usersCollection) =>
   usersCollection.where("role", "==", "student")
@@ -86,7 +97,7 @@ const students = await users.createDoc({
 - [x] Data memoisation
 - [x] Getting documents by ID
 - [x] Getting documents by query
-- [ ] Creating documents
+- [x] Creating documents
 - [ ] Choice to disable memoisation for specific calls
 - [ ] User-defined dataloader support
 - [ ] Collection group support

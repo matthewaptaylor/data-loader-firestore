@@ -266,7 +266,9 @@ export class FirestoreCollectionLoader<T extends DocumentData> {
    *
    * @return {Promise<T>} The document.
    */
-  async fetchDocById(...docNames: string[]): Promise<OutputDocumentData<T>> {
+  async fetchDocById(
+    ...docNames: string[]
+  ): Promise<OutputDocumentData<T> | undefined> {
     if (docNames.length === 0)
       throw new Error("Document names must be specified.");
 
@@ -280,7 +282,17 @@ export class FirestoreCollectionLoader<T extends DocumentData> {
     if (docNames.some((docName) => docName.includes("/")))
       throw new Error("Document names cannot contain slashes.");
 
-    return this.dataLoader.load(this.getDocSegments(...docNames).join("/"));
+    let doc;
+
+    try {
+      doc = await this.dataLoader.load(
+        this.getDocSegments(...docNames).join("/")
+      );
+    } catch {
+      doc = undefined;
+    }
+
+    return doc;
   }
 
   /**
@@ -344,6 +356,19 @@ export class FirestoreCollectionLoader<T extends DocumentData> {
   }
 
   /**
+   * Fetches all documents in a collection. This is a convenience method for
+   * fetchDocsByQuery.
+   *
+   * @param {string[]} docNames The names of the Firestore documents that lead
+   * to the collection to query.
+   *
+   * @return {Promise<OutputDocumentData<T>[]>} The documents in the collection.
+   */
+  async fetchDocs(...docNames: string[]) {
+    return this.fetchDocsByQuery((collectionRef) => collectionRef, ...docNames);
+  }
+
+  /**
    * Creates a document in Firestore.
    *
    * @example
@@ -365,6 +390,9 @@ export class FirestoreCollectionLoader<T extends DocumentData> {
    *
    * @param {T} data The data to write to the document.
    *
+   * @param {boolean} overwrite Whether to overwrite the document if it already
+   * exists. If false, the new document will be merged with the existing data.
+   *
    * @param {string[]} docNames The names of the Firestore documents that lead to the
    * document to create. If equal to the length of this.collectionNames, the
    * document is created in the collection. If one less than the length of
@@ -375,8 +403,9 @@ export class FirestoreCollectionLoader<T extends DocumentData> {
    */
   async createDoc(
     data: T,
+    overwrite: boolean,
     ...docNames: string[]
-  ): Promise<OutputDocumentData<T>> {
+  ): Promise<OutputDocumentData<T> | undefined> {
     // Ensure that no doc names contain slashes
     if (docNames.some((docName) => docName.includes("/")))
       throw new Error("Document names cannot contain slashes.");
@@ -401,14 +430,12 @@ export class FirestoreCollectionLoader<T extends DocumentData> {
       _id: docRef.id,
       _path: docRef.path,
     };
-    await docRef.set(dataToWrite);
+    await docRef.set(dataToWrite, { merge: !overwrite });
 
-    // Prime the cache
-    this.dataLoader.prime(
-      this.getDocSegments(...docNames).join("/"),
-      dataToWrite
+    console.log("Created document", docRef.path);
+
+    return this.fetchDocById(
+      ...this.getDocNamesFromSegments(...docRef.path.split("/"))
     );
-
-    return dataToWrite;
   }
 }

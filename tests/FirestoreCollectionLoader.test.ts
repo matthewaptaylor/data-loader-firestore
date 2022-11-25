@@ -156,6 +156,14 @@ describe("FirestoreCollectionLoader.fetchDocById", () => {
     });
   });
 
+  test("returns undefined on non-existent document", async () => {
+    await firestoreIsPopulated;
+
+    const users = new FirestoreCollectionLoader(firestore, "users");
+
+    expect(await users.fetchDocById("yeet")).toBe(undefined);
+  });
+
   test("rejects too few document names", () => {
     const userPosts = new FirestoreCollectionLoader(
       firestore,
@@ -358,6 +366,7 @@ describe("FirestoreCollectionLoader.createDoc", () => {
             firstName: "Jane",
             lastName: "Doe",
           },
+          true,
           "j/johndoe"
         )
     ).rejects.toThrow("Document names cannot contain slashes.");
@@ -372,10 +381,13 @@ describe("FirestoreCollectionLoader.createDoc", () => {
 
     expect(
       async () =>
-        await userPosts.createDoc({
-          title: "Invalid Post",
-          content: "This is an invalid post",
-        })
+        await userPosts.createDoc(
+          {
+            title: "Invalid Post",
+            content: "This is an invalid post",
+          },
+          true
+        )
     ).rejects.toThrow(
       "To select a collection, the number of document names must be one less than the number of collection names."
     );
@@ -395,6 +407,7 @@ describe("FirestoreCollectionLoader.createDoc", () => {
             title: "Another Invalid Post",
             content: "This is another invalid post",
           },
+          true,
           "jdoe",
           "post1",
           "likes"
@@ -418,6 +431,7 @@ describe("FirestoreCollectionLoader.createDoc", () => {
         title: "Second Post",
         content: "This is a second post",
       },
+      true,
       "jdoe",
       "post2"
     );
@@ -449,6 +463,7 @@ describe("FirestoreCollectionLoader.createDoc", () => {
         title: "Second Post",
         content: "This is a second post",
       },
+      true,
       "jdoe",
       "post2"
     );
@@ -478,6 +493,7 @@ describe("FirestoreCollectionLoader.createDoc", () => {
         title: "Random Post",
         content: "This is a random post",
       },
+      true,
       "jdoe"
     );
 
@@ -485,7 +501,7 @@ describe("FirestoreCollectionLoader.createDoc", () => {
       .collection("users")
       .doc("jdoe")
       .collection("posts")
-      .doc(userPost._path?.split("/")[3] ?? "")
+      .doc(userPost?._path?.split("/")[3] ?? "")
       .get();
 
     expect(post2.data()).toEqual({
@@ -506,6 +522,7 @@ describe("FirestoreCollectionLoader.createDoc", () => {
         title: "Memoed Post",
         content: "This is a memoed post",
       },
+      true,
       "jdoe",
       "postMemo"
     );
@@ -542,6 +559,7 @@ describe("FirestoreCollectionLoader.createDoc", () => {
         title: "Memoed Post",
         content: "This is a memoed post",
       },
+      true,
       "jdoe",
       "postMemo"
     );
@@ -550,7 +568,7 @@ describe("FirestoreCollectionLoader.createDoc", () => {
       .collection("users")
       .doc("jdoe")
       .collection("posts")
-      .doc(createRes._path?.split("/")[3] ?? "")
+      .doc(createRes?._path?.split("/")[3] ?? "")
       .set({
         title: "Changed Post",
         content: "This is a memoed post that's been changed",
@@ -560,7 +578,7 @@ describe("FirestoreCollectionLoader.createDoc", () => {
 
     expect(data).toEqual({
       _id: "postMemo",
-      _path: createRes._path,
+      _path: createRes?._path,
       title: "Memoed Post",
       content: "This is a memoed post",
     });
