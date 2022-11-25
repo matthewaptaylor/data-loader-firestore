@@ -1,10 +1,10 @@
 # data-loader-firestore
 
-data-loader-firestore is a utility to reduce requests to Firestore via memoisation.
+data-loader-firestore is a utility to reduce requests to Firestore via memoisation. This means requests to Firestore for the same document aren't duplicated, as long as they are carried out on the same instance of FirestoreDataLoader. Among other use cases, it can be very useful in a GraphQL server ([explained here](https://www.apollographql.com/docs/apollo-server/data/fetching-data#batching-and-caching)), such as Apollo Server v4.
 
 ## Usage
 
-To add data-loaer-firestore to your project:
+To add data-loader-firestore to your project:
 
 ```bash
 npm install --save data-loader-firestore
@@ -78,6 +78,20 @@ const students = await users.createDoc(
     name: "Mary Smith",
     role: "teacher",
   },
+  true,
+  "msmith"
+);
+```
+
+To update the role of the document 'msmith':
+
+```ts
+// Returns { _id: 'msmith', _path: '/users/msmith', name: "Mary Smith", role: "retured" }
+const students = await users.createDoc(
+  {
+    role: "retired",
+  },
+  false,
   "msmith"
 );
 ```
@@ -86,10 +100,13 @@ Create a user with a generated document ID:
 
 ```ts
 // Returns { _id: 'generatedId', _path: '/users/generatedId', name: "Mary Smith", role: "student" }
-const students = await users.createDoc({
-  name: "Mary Smith",
-  role: "teacher",
-});
+const students = await users.createDoc(
+  {
+    name: "Mary Smith",
+    role: "teacher",
+  },
+  true
+);
 ```
 
 ## Planned features
