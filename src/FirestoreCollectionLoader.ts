@@ -402,7 +402,7 @@ export class FirestoreCollectionLoader<T extends DocumentData> {
    * @return {Promise<OutputDocumentData<T>>} The document written.
    */
   async createDoc(
-    data: T,
+    data: Partial<T> | T,
     overwrite: boolean,
     ...docNames: string[]
   ): Promise<OutputDocumentData<T> | undefined> {
@@ -425,7 +425,7 @@ export class FirestoreCollectionLoader<T extends DocumentData> {
     }
 
     // Create the document
-    const dataToWrite: OutputDocumentData<T> = {
+    const dataToWrite: OutputDocumentData<Partial<T> | T> = {
       ...data,
       _id: docRef.id,
       _path: docRef.path,
