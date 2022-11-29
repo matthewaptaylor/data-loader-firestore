@@ -1,5 +1,6 @@
 import type {
   CollectionReference,
+  CollectionGroup,
   DocumentReference,
   Firestore,
   Query,
@@ -345,7 +346,52 @@ export class FirestoreCollectionLoader<T extends DocumentData> {
 
     // Add each document to the array
     snap.forEach((doc) => {
-      const path = this.getDocSegments(...docNames, doc.id).join("/");
+      const path = doc.ref.path;
+      const data = doc.data();
+
+      docs.push(data);
+      this.dataLoader.prime(path, data);
+    });
+
+    return docs;
+  }
+
+  /**
+   * Reads multiple documents from Firestore by a collection group query. The
+   * query is not saved, but the documents fetched are. Note that this method
+   * fetches the collection group of the last collection name given during
+   * construction.
+   *
+   * @example
+   * // This returns an array of documents in every collection, no matter the
+   * // path, where the field 'title' equals 'Post 1'. Note that this would
+   * // also return any documents in a 'organisations' 'posts' subcollection,
+   * // for example.
+   * const userPosts = new FirestoreDataLoader(firestore, "users", "posts");
+   * const students = await users.fetchDocsByQuery((usersCollection) =>
+   *  usersCollection.where("role", "==", "student")
+   * );
+   *
+   * @param {Function} queryFn A function that returns the query to be executed.
+   *
+   * @return {Promise<OutputDocumentData<T>[]>} The documents in the collection group.
+   */
+  async fetchDocsByCollectionGroupQuery(
+    queryFn: (
+      collectionRef: CollectionGroup<OutputDocumentData<T>>
+    ) => Query<OutputDocumentData<T>>
+  ): Promise<OutputDocumentData<T>[]> {
+    // Get the query
+    const collectionRef = this.firestore
+      .collectionGroup(this.collectionNames[this.collectionNames.length - 1])
+      .withConverter(new GenericConverter<T>());
+    const snap = await queryFn(collectionRef).get();
+
+    const docs: OutputDocumentData<T>[] = [];
+
+    // Add each document to the array
+    snap.forEach((doc) => {
+      const path = doc.ref.path;
       const data = doc.data();
 
       docs.push(data);

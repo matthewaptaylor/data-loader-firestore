@@ -117,7 +117,7 @@ const students = await users.createDoc(
 - [x] Creating documents
 - [ ] Choice to disable memoisation for specific calls
 - [ ] User-defined dataloader support
-- [ ] Collection group support
+- [x] Collection group support
 - [ ] Clearing a memoised document
 - [ ] Caching support
 
