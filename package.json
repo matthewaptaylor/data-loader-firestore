@@ -1,6 +1,6 @@
 {
   "name": "data-loader-firestore",
-  "version": "v2.0.2",
+  "version": "v2.0.4",
   "description": "A utility to reduce requests to Firestore via batching and caching.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

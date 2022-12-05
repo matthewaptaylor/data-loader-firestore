@@ -18,7 +18,7 @@ import {
  * Provides memoisation for Firestore queries.
  */
 export class FirestoreCollectionLoader<T extends DocumentData> {
-  protected dataLoader: DataLoader<string, OutputDocumentData<T>>;
+  dataLoader: DataLoader<string, OutputDocumentData<T>>;
   protected firestore: Firestore;
   protected collectionNames: string[];
 
